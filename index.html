@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartas y correos | Emisora Radio 33,3</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #102b46;
+      --blue: #1769aa;
+      --pale: #eef5fb;
+      --line: #d9e2ec;
+      --text: #25364a;
+      --muted: #65758b;
+      --green: #207747;
+      --red: #a42b25;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f4f7fb;
+      color: var(--text);
+      font: 15px/1.5 "Segoe UI", Arial, sans-serif;
+    }
+    header {
+      padding: 28px max(22px, calc((100% - 1060px) / 2));
+      background: var(--navy);
+      color: #fff;
+    }
+    header h1 { margin: 0 0 5px; font-size: 25px; }
+    header p { margin: 0; color: #d7e7f5; }
+    main { width: min(1060px, calc(100% - 32px)); margin: 24px auto 48px; }
+    .card {
+      margin: 16px 0;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 3px 12px #1836540a;
+    }
+    h2 { margin: 0 0 14px; color: var(--navy); font-size: 19px; }
+    .step { color: var(--blue); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .file { max-width: 100%; }
+    button, .button {
+      min-height: 40px;
+      padding: 9px 15px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--blue);
+      color: #fff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    button:hover, .button:hover { background: #11578e; }
+    button.secondary { border: 1px solid var(--line); background: #fff; color: var(--navy); }
+    button.secondary:hover { background: var(--pale); }
+    button:disabled { cursor: not-allowed; opacity: .55; }
+    input[type="text"] {
+      width: min(100%, 430px);
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid #bbc9d8;
+      border-radius: 6px;
+      font: inherit;
+    }
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+    .notice { margin-top: 12px; color: var(--muted); }
+    .notice.error { color: var(--red); }
+    .notice.success { color: var(--green); }
+    .warning-list { color: var(--red); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    td.status { white-space: nowrap; }
+    .status-Enviado { color: var(--green); font-weight: 700; }
+    .status-Pendiente { color: var(--muted); }
+    .small { color: var(--muted); font-size: 13px; }
+    @media (max-width: 600px) {
+      .card { padding: 17px; }
+      header { padding-top: 22px; padding-bottom: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cartas y correos personalizados</h1>
+    <p>Emisora Radio 33,3 · Cada empresa recibe su propia carta adjunta</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="step">Paso 1</div>
+      <h2>Cargar la carta de Word</h2>
+      <div class="row">
+        <input id="templateFile" class="file" type="file" accept=".docx">
+        <button id="uploadTemplate">Cargar carta</button>
+        <span id="templateState" class="small"></span>
+      </div>
+      <p class="hint">La carta debe ser .docx y tener el espacio «Empresa: ____». Se reemplazará con el nombre de cada empresa.</p>
+    </section>
+
+    <section class="card">
+      <div class="step">Paso 2</div>
+      <h2>Importar los contactos de Excel</h2>
+      <div class="row">
+        <input id="contactsFile" class="file" type="file" accept=".xlsx">
+        <button id="uploadContacts">Importar Excel</button>
+      </div>
+      <p class="hint">El Excel debe tener encabezados «empresa» y «correo». Importar una lista nueva reemplaza la lista anterior.</p>
+      <div id="importResult" class="notice" role="status"></div>
+    </section>
+
+    <section class="card">
+      <div class="step">Paso 3</div>
+      <h2>Preparar los correos</h2>
+      <p>Cada mensaje se prepara para enviarse desde <strong id="sender">croyamid@hotmail.com</strong>.</p>
+      <p class="hint">El programa no envía automáticamente. Abre cada archivo .eml del ZIP con tu aplicación de correo, revisa el mensaje y pulsa «Enviar». La carta Word ya va adjunta.</p>
+    </section>
+
+    <section class="card">
+      <div class="step">Paso 4</div>
+      <h2>Revisar y descargar</h2>
+      <p class="hint">El ZIP incluye un correo individual .eml con la carta adjunta y el archivo Word por separado para cada empresa. Descargarlo no envía correos.</p>
+      <div class="actions">
+        <button id="downloadDrafts">Descargar correos seleccionados</button>
+        <button id="selectAll" class="secondary">Seleccionar todos</button>
+        <button id="closeApp" class="secondary" hidden>Cerrar programa</button>
+      </div>
+      <div id="draftResult" class="notice" role="status"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><input id="selectToggle" type="checkbox" aria-label="Seleccionar todos"></th>
+              <th>Empresa</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="contactsBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="notice">Carga un archivo de Excel para ver los contactos.</div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, options);
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await response.json() : null;
+      if (!response.ok) throw new Error(data?.error || `Error HTTP ${response.status}`);
+      return { response, data };
+    }
+
+    function showNotice(element, message, kind = "") {
+      element.textContent = message;
+      element.className = `notice ${kind}`.trim();
+    }
+
+    async function uploadFile(inputId, url, resultId) {
+      const file = $(inputId).files[0];
+      if (!file) throw new Error("Primero selecciona un archivo.");
+      const body = new FormData();
+      body.append("file", file);
+      const { data } = await api(url, { method: "POST", body });
+      if (resultId) {
+        showNotice($(resultId), data.message, "success");
+        if (data.warnings?.length) {
+          const list = document.createElement("ul");
+          list.className = "warning-list";
+          data.warnings.forEach((warning) => {
+            const item = document.createElement("li");
+            item.textContent = warning;
+            list.appendChild(item);
+          });
+          $(resultId).appendChild(list);
+        }
+      }
+      await refresh();
+    }
+
+    function renderContacts(contacts) {
+      const body = $("contactsBody");
+      body.replaceChildren();
+      contacts.forEach((contact) => {
+        const row = document.createElement("tr");
+        const checked = true;
+        row.innerHTML = `<td><input class="contact-check" type="checkbox" value="${contact.id}" ${checked ? "checked" : ""} aria-label="Seleccionar ${escapeHtml(contact.company)}"></td>
+          <td></td><td></td><td class="status"></td><td></td>`;
+        row.children[1].textContent = contact.company;
+        row.children[2].textContent = contact.email;
+        row.children[3].textContent = "Listo para descargar";
+        row.children[3].classList.add("status-Pendiente");
+        body.appendChild(row);
+      });
+      $("emptyState").hidden = contacts.length > 0;
+      $("selectToggle").checked = contacts.length > 0;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[character]);
+    }
+
+    async function refresh() {
+      if (window.location.protocol === "file:") {
+        $("downloadDrafts").disabled = true;
+        showNotice($("draftResult"), "Para usar este programa, haz doble clic en «IniciarPrograma.bat». La página HTML necesita el servidor local incluido en la carpeta.", "error");
+        return;
+      }
+      const { data } = await api("/api/status");
+      $("sender").textContent = data.sender;
+      $("templateState").textContent = data.template_loaded ? "Carta cargada" : "Aún no se ha cargado";
+      renderContacts(data.contacts);
+      $("downloadDrafts").disabled = !data.template_loaded || !data.contacts.length;
+      $("closeApp").hidden = !data.desktop_app;
+    }
+
+    function selectedIds() {
+      return [...document.querySelectorAll(".contact-check:checked")].map((input) => Number(input.value));
+    }
+
+    $("uploadTemplate").addEventListener("click", async () => {
+      try { await uploadFile("templateFile", "/api/template"); await refresh(); }
+      catch (error) { alert(error.message); }
+    });
+    $("uploadContacts").addEventListener("click", async () => {
+      if (!confirm("Importar este Excel reemplazará la lista actual de empresas. ¿Continuar?")) return;
+      try { await uploadFile("contactsFile", "/api/contacts", "importResult"); }
+      catch (error) { showNotice($("importResult"), error.message, "error"); }
+    });
+    $("selectAll").addEventListener("click", () => {
+      document.querySelectorAll(".contact-check").forEach((input) => { input.checked = true; });
+      $("selectToggle").checked = true;
+    });
+    $("selectToggle").addEventListener("change", () => {
+      document.querySelectorAll(".contact-check").forEach((input) => {
+        input.checked = $("selectToggle").checked;
+      });
+    });
+    $("downloadDrafts").addEventListener("click", async () => {
+      try {
+        const ids = selectedIds();
+        if (!ids.length) throw new Error("Selecciona al menos una empresa.");
+        const { response } = await api("/api/emails.zip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids })
+        });
+        const blob = await response.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "correos_listos_para_enviar.zip";
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        showNotice($("draftResult"), "ZIP listo. Extrae el archivo, abre cada .eml, verifica el remitente, el destinatario y la carta adjunta, y pulsa «Enviar» en tu correo.", "success");
+      } catch (error) { showNotice($("draftResult"), error.message, "error"); }
+    });
+    $("closeApp").addEventListener("click", async () => {
+      try {
+        const { data } = await api("/api/shutdown", { method: "POST" });
+        showNotice($("draftResult"), data.message, "success");
+      } catch (error) {
+        showNotice($("draftResult"), error.message, "error");
+      }
+    });
+
+    refresh().catch((error) => showNotice($("importResult"), error.message, "error"));
+  </script>
+</body>
+</html>
